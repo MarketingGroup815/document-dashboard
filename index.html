@@ -13,7 +13,6 @@
 
   <!-- Core Libraries -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
 
@@ -23,7 +22,13 @@
       <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow">DMS</div>
       <h1 class="text-xl font-semibold tracking-tight">Document Vault</h1>
     </div>
-    <div class="text-xs text-slate-400" id="status-indicator">Loading database...</div>
+    <div class="flex items-center gap-4">
+      <button id="user-badge" class="text-xs bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg flex items-center gap-2 transition">
+        <span id="user-email-display">Not Signed In</span>
+        <span class="text-blue-400 font-semibold text-[10px] uppercase">Change</span>
+      </button>
+      <div class="text-xs text-slate-400" id="status-indicator">Initializing...</div>
+    </div>
   </header>
 
   <!-- Filter Controls & Search Bar -->
@@ -55,7 +60,7 @@
       </div>
 
       <div id="panel-list" class="space-y-2 flex-1">
-        <div class="text-center py-12 text-slate-500 text-sm">Loading records...</div>
+        <div class="text-center py-12 text-slate-500 text-sm">Authenticating user...</div>
       </div>
     </div>
 
@@ -79,12 +84,13 @@
   </main>
 
   <script>
-    // --- PASTE YOUR PUBLISHED CSV URL BELOW ---
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxgtQLPj7r29kV62-RvD3JOyShdRhuffM_OLcnE31uQrUrwDuMtpyXZArQbmegATSVnETHRaVMFW7d/pub?gid=0&single=true&output=csv";
-    // ----------------------------------------
+    // --- PASTE YOUR WEB APP DEPLOYMENT URL HERE ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbwpCHLwjso86lrlndi-97iC4_Ns0ecEuGgm27pUX_PMoLsecNVC29B8cOTxmJR8fi-O2Q/exec";
+    // ----------------------------------------------
 
     let rawData = [];
     let activeFolder = null;
+    let currentUserEmail = localStorage.getItem("dms_user_email") || "";
 
     const panelList = document.getElementById("panel-list");
     const breadcrumbBar = document.getElementById("breadcrumb-bar");
@@ -101,23 +107,54 @@
     const viewerHeader = document.getElementById("viewer-header");
     const viewerTitle = document.getElementById("viewer-title");
     const externalLink = document.getElementById("external-link");
+    const userBadge = document.getElementById("user-badge");
+    const userEmailDisplay = document.getElementById("user-email-display");
 
     function init() {
-      Papa.parse(CSV_URL, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          rawData = results.data.filter(row => row.Name && row.FileID);
-          statusIndicator.textContent = `${rawData.length} Documents Loaded`;
+      if (!currentUserEmail) {
+        promptUserEmail();
+      } else {
+        updateUserBadgeDisplay();
+        fetchVaultData();
+      }
+    }
+
+    function promptUserEmail() {
+      const email = prompt("Enter your authorized email address to access Document Vault:", currentUserEmail);
+      if (email && email.trim() !== "") {
+        currentUserEmail = email.trim().toLowerCase();
+        localStorage.setItem("dms_user_email", currentUserEmail);
+        updateUserBadgeDisplay();
+        fetchVaultData();
+      } else if (!currentUserEmail) {
+        statusIndicator.textContent = "Access Denied: Email Required";
+        panelList.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">Please enter an authorized email address to view folders.</div>';
+      }
+    }
+
+    function updateUserBadgeDisplay() {
+      userEmailDisplay.textContent = currentUserEmail || "Not Signed In";
+    }
+
+    function fetchVaultData() {
+      statusIndicator.textContent = "Checking security permissions...";
+      panelList.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">Loading authorized records...</div>';
+
+      const secureUrl = `${API_URL}?email=${encodeURIComponent(currentUserEmail)}`;
+
+      fetch(secureUrl)
+        .then(response => response.json())
+        .then(data => {
+          rawData = data.filter(row => row.Name && row.FileID);
+          statusIndicator.textContent = `${rawData.length} Documents Authorized`;
           populateDropdowns();
           renderView();
-        },
-        error: function(err) {
-          statusIndicator.textContent = "Error loading database feed.";
+        })
+        .catch(err => {
+          statusIndicator.textContent = "Error connecting to secure API.";
+          panelList.innerHTML = '<div class="text-center py-12 text-red-400 text-sm">Failed to verify permissions or load dataset.</div>';
           console.error(err);
-        }
-      });
+        });
     }
 
     function populateDropdowns() {
@@ -125,7 +162,7 @@
       const years = [...new Set(rawData.map(item => item.Year))].filter(Boolean).sort().reverse();
 
       typeFilter.innerHTML = '<option value="">All File Types</option>';
-      years.innerHTML = '<option value="">All Years</option>';
+      yearFilter.innerHTML = '<option value="">All Years</option>';
 
       types.forEach(t => typeFilter.innerHTML += `<option value="${t}">${t}</option>`);
       years.forEach(y => yearFilter.innerHTML += `<option value="${y}">${y}</option>`);
@@ -159,7 +196,7 @@
       const categories = [...new Set(rawData.map(item => item.Category))].filter(Boolean).sort();
 
       if (categories.length === 0) {
-        panelList.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No vault folders found</div>';
+        panelList.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No authorized vault folders assigned to this account.</div>';
         return;
       }
 
@@ -177,7 +214,7 @@
             </div>
             <div>
               <h3 class="text-base font-semibold text-slate-100 group-hover:text-blue-400 transition">${cat}</h3>
-              <p class="text-xs text-slate-400 mt-0.5">Root Vault Folder • ${docCount} ${docCount === 1 ? 'file' : 'files'}</p>
+              <p class="text-xs text-slate-400 mt-0.5">Vault Folder • ${docCount} ${docCount === 1 ? 'file' : 'files'}</p>
             </div>
           </div>
           <span class="text-[10px] px-2.5 py-1 rounded-md font-mono bg-amber-950/60 text-amber-400 border border-amber-700/50 uppercase tracking-wider">Folder</span>
@@ -264,6 +301,7 @@
       renderView();
     }
 
+    userBadge.addEventListener("click", promptUserEmail);
     backToFoldersBtn.addEventListener("click", resetToRootFolders);
     clearFiltersBtn.addEventListener("click", resetToRootFolders);
     searchInput.addEventListener("input", renderView);
