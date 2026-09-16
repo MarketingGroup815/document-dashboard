@@ -3,11 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Document Management System</title>
+  <title>Document Management System</title>
   <meta name="theme-color" content="#1e293b">
+
+  <!-- Blue Shield Favicon & Touch Icon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-5.45 9-12V5l-9-4zm0 6c1.4 0 2.5 1.1 2.5 2.5 0 .9-.5 1.7-1.2 2.1v3.4h-2.6v-3.4c-.7-.4-1.2-1.2-1.2-2.1 0-1.4 1.1-2.5 2.5-2.5z'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-5.45 9-12V5l-9-4zm0 6c1.4 0 2.5 1.1 2.5 2.5 0 .9-.5 1.7-1.2 2.1v3.4h-2.6v-3.4c-.7-.4-1.2-1.2-1.2-2.1 0-1.4 1.1-2.5 2.5-2.5z'/%3E%3C/svg%3E">
-  <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Document%20Vault%22,%22short_name%22:%22Vault%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22#0f172a%22,%22theme_color%22:%22#1e293b%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%253Csvg%2520xmlns=%27http://www.w3.org/2000/svg%27%2520viewBox=%270%25200%252024%252024%27%2520fill=%27%25233b82f6%27%253E%253Cpath%2520d=%27M12%25201L3%25205v6c0%25205.55%25203.84%252010.74%25209%252012%25205.16-1.26%25209-5.45%25209-12V5l-9-4zm0%25206c1.4%25200%25202.5%25201.1%25202.5%25202.5%25200%2520.9-.5%25201.7-1.2%25202.1v3.4h-2.6v-3.4c-.7-.4-1.2-1.2-1.2-2.1%25200-1.4%25201.1-2.5%25202.5-2.5z%27/%253E%253C/svg%253E%22,%22sizes%22:%22512x512%22,%22type%22:%22image/svg+xml%22,%22purpose%22:%22any%20maskable%22}]}">
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Document%20Vault%22%2C%22short_name%22%3A%22Vault%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%231e293b%22%7D">
+
+  <!-- Core Libraries -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
 
@@ -74,11 +80,11 @@
 
   <script>
     // --- PASTE YOUR PUBLISHED CSV URL BELOW ---
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxgtQLPj7r29kV62-RvD3JOyShdRhuffM_OLcnE31uQrUrwDuMtpyXZArQbmegATSVnETHRaVMFW7d/pub?gid=0&single=true&output=csv";
+    const CSV_URL = "YOUR_PUBLISHED_CSV_URL_HERE";
     // ----------------------------------------
 
     let rawData = [];
-    let activeFolder = null; // null = viewing root folders, string = viewing specific folder
+    let activeFolder = null;
 
     const panelList = document.getElementById("panel-list");
     const breadcrumbBar = document.getElementById("breadcrumb-bar");
@@ -130,7 +136,6 @@
       const selectedType = typeFilter.value;
       const selectedYear = yearFilter.value;
 
-      // If user types a search query or selects a dropdown filter, show matching documents across all folders
       if (q || selectedType || selectedYear) {
         breadcrumbBar.classList.remove("hidden");
         currentFolderLabel.textContent = q ? "Search Results" : "Filtered Documents";
@@ -138,7 +143,6 @@
         return;
       }
 
-      // If no folder selected, render Root Vault Folders (Andiku, SAB, TDK)
       if (!activeFolder) {
         breadcrumbBar.classList.add("hidden");
         renderFolders();
