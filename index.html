@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Management System</title>
+  <meta name="theme-color" content="#1e293b">
+  <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Document%20Vault%22,%22short_name%22:%22Vault%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22#0f172a%22,%22theme_color%22:%22#1e293b%22}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow">DMS</div>
+      <h1 class="text-xl font-semibold tracking-tight">Document Vault</h1>
+    </div>
+    <div class="text-xs text-slate-400" id="status-indicator">Loading database...</div>
+  </header>
+
+  <!-- Filter Controls & Search Bar -->
+  <section class="bg-slate-800/50 border-b border-slate-700 p-4 px-6 flex flex-wrap gap-3 items-center">
+    <input type="text" id="search-input" placeholder="Search documents..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 flex-1 min-w-[200px]">
+    
+    <select id="category-filter" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+      <option value="">All Categories</option>
+    </select>
+
+    <select id="type-filter" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+      <option value="">All File Types</option>
+    </select>
+
+    <select id="year-filter" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+      <option value="">All Years</option>
+    </select>
+
+    <button id="clear-filters" class="text-xs text-slate-400 hover:text-white px-2 py-1">Reset Filters</button>
+  </section>
+
+  <!-- Split-Screen Workspace -->
+  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- Left Document List Panel -->
+    <div class="w-full lg:w-5/12 border-r border-slate-700 overflow-y-auto p-4 space-y-2 max-h-[50vh] lg:max-h-none" id="document-list">
+      <div class="text-center py-12 text-slate-500 text-sm">Loading records...</div>
+    </div>
+
+    <!-- Right PDF/File Viewer Panel -->
+    <div class="w-full lg:w-7/12 bg-slate-950 flex flex-col min-h-[50vh] lg:min-h-0">
+      <div id="viewer-header" class="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center hidden">
+        <span id="viewer-title" class="text-xs font-medium text-slate-300 truncate pr-4">Document Title</span>
+        <a id="external-link" href="#" target="_blank" class="text-xs text-blue-400 hover:underline flex items-center gap-1">Open in Drive ↗</a>
+      </div>
+      <div id="viewer-container" class="flex-1 flex items-center justify-center p-4">
+        <div class="text-center text-slate-500 text-sm" id="viewer-placeholder">
+          Select any document on the left to display live preview
+        </div>
+        <iframe id="preview-frame" class="w-full h-full rounded border-0 hidden" allow="autoplay"></iframe>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // --- PASTE YOUR PUBLISHED CSV URL HERE ---
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxgtQLPj7r29kV62-RvD3JOyShdRhuffM_OLcnE31uQrUrwDuMtpyXZArQbmegATSVnETHRaVMFW7d/pub?gid=0&single=true&output=csv";
+    // ----------------------------------------
+
+    let rawData = [];
+    const documentList = document.getElementById("document-list");
+    const searchInput = document.getElementById("search-input");
+    const categoryFilter = document.getElementById("category-filter");
+    const typeFilter = document.getElementById("type-filter");
+    const yearFilter = document.getElementById("year-filter");
+    const clearFiltersBtn = document.getElementById("clear-filters");
+    const statusIndicator = document.getElementById("status-indicator");
+    const previewFrame = document.getElementById("preview-frame");
+    const viewerPlaceholder = document.getElementById("viewer-placeholder");
+    const viewerHeader = document.getElementById("viewer-header");
+    const viewerTitle = document.getElementById("viewer-title");
+    const externalLink = document.getElementById("external-link");
+
+    function init() {
+      Papa.parse(CSV_URL, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          rawData = results.data.filter(row => row.Name && row.FileID);
+          statusIndicator.textContent = `${rawData.length} Documents Loaded`;
+          populateFilters();
+          renderList(rawData);
+        },
+        error: function(err) {
+          statusIndicator.textContent = "Error loading database feed.";
+          console.error(err);
+        }
+      });
+    }
+
+    function populateFilters() {
+      const categories = [...new Set(rawData.map(item => item.Category))].filter(Boolean).sort();
+      const types = [...new Set(rawData.map(item => item.Type))].filter(Boolean).sort();
+      const years = [...new Set(rawData.map(item => item.Year))].filter(Boolean).sort().reverse();
+
+      categories.forEach(cat => categoryFilter.innerHTML += `<option value="${cat}">${cat}</option>`);
+      types.forEach(t => typeFilter.innerHTML += `<option value="${t}">${t}</option>`);
+      years.forEach(y => yearFilter.innerHTML += `<option value="${y}">${y}</option>`);
+    }
+
+    function renderList(items) {
+      documentList.innerHTML = "";
+      if (items.length === 0) {
+        documentList.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No matching documents found</div>';
+        return;
+      }
+
+      items.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "p-3 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 rounded-lg cursor-pointer transition flex justify-between items-start gap-3";
+        
+        let typeBadgeColor = "bg-gray-700 text-gray-300";
+        if (item.Type === "PDF") typeBadgeColor = "bg-red-900/60 text-red-300 border border-red-700/50";
+        if (item.Type === "Sheet") typeBadgeColor = "bg-emerald-900/60 text-emerald-300 border border-emerald-700/50";
+        if (item.Type === "Doc") typeBadgeColor = "bg-blue-900/60 text-blue-300 border border-blue-700/50";
+        if (item.Type === "Image") typeBadgeColor = "bg-purple-900/60 text-purple-300 border border-purple-700/50";
+
+        card.innerHTML = `
+          <div class="overflow-hidden">
+            <h3 class="text-sm font-medium text-slate-100 truncate">${item.Name}</h3>
+            <div class="flex items-center gap-2 mt-1 text-xs text-slate-400">
+              <span>${item.Category || "Root"}</span>
+              <span>•</span>
+              <span>${item.LastModified || ""}</span>
+            </div>
+          </div>
+          <span class="text-[10px] px-2 py-0.5 rounded font-mono ${typeBadgeColor}">${item.Type}</span>
+        `;
+
+        card.addEventListener("click", () => loadPreview(item));
+        documentList.appendChild(card);
+      });
+    }
+
+    function loadPreview(item) {
+      const previewUrl = `https://drive.google.com/file/d/${item.FileID}/preview`;
+      previewFrame.src = previewUrl;
+      previewFrame.classList.remove("hidden");
+      viewerPlaceholder.classList.add("hidden");
+      viewerHeader.classList.remove("hidden");
+      viewerTitle.textContent = item.Name;
+      externalLink.href = item.URL;
+    }
+
+    function filterData() {
+      const q = searchInput.value.toLowerCase();
+      const selectedCat = categoryFilter.value;
+      const selectedType = typeFilter.value;
+      const selectedYear = yearFilter.value;
+
+      const filtered = rawData.filter(item => {
+        const matchesQuery = item.Name.toLowerCase().includes(q) || (item.Category && item.Category.toLowerCase().includes(q));
+        const matchesCat = !selectedCat || item.Category === selectedCat;
+        const matchesType = !selectedType || item.Type === selectedType;
+        const matchesYear = !selectedYear || item.Year === selectedYear;
+        return matchesQuery && matchesCat && matchesType && matchesYear;
+      });
+
+      renderList(filtered);
+    }
+
+    searchInput.addEventListener("input", filterData);
+    categoryFilter.addEventListener("change", filterData);
+    typeFilter.addEventListener("change", filterData);
+    yearFilter.addEventListener("change", filterData);
+
+    clearFiltersBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      categoryFilter.value = "";
+      typeFilter.value = "";
+      yearFilter.value = "";
+      renderList(rawData);
+    });
+
+    window.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
