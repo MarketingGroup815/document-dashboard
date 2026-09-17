@@ -11,18 +11,18 @@
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-5.45 9-12V5l-9-4zm0 6c1.4 0 2.5 1.1 2.5 2.5 0 .9-.5 1.7-1.2 2.1v3.4h-2.6v-3.4c-.7-.4-1.2-1.2-1.2-2.1 0-1.4 1.1-2.5 2.5-2.5z'/%3E%3C/svg%3E">
   <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Document%20Vault%22%2C%22short_name%22%3A%22Vault%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%231e293b%22%7D">
 
-  <!-- Core Libraries -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
 
   <!-- Top Navigation Header -->
-  <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+  <header class="bg-slate-800 border-b border-slate-700 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
     <div class="flex items-center gap-3">
       <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow">DMS</div>
       <h1 class="text-xl font-semibold tracking-tight">Document Vault</h1>
     </div>
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-3">
       <button id="user-badge" class="text-xs bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg flex items-center gap-2 transition">
         <span id="user-email-display">Not Signed In</span>
         <span class="text-blue-400 font-semibold text-[10px] uppercase">Change</span>
@@ -32,8 +32,8 @@
   </header>
 
   <!-- Filter Controls & Search Bar -->
-  <section class="bg-slate-800/50 border-b border-slate-700 p-4 px-6 flex flex-wrap gap-3 items-center">
-    <input type="text" id="search-input" placeholder="Search documents..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 flex-1 min-w-[200px]">
+  <section class="bg-slate-800/50 border-b border-slate-700 p-4 px-4 sm:px-6 flex flex-wrap gap-3 items-center">
+    <input type="text" id="search-input" placeholder="Search documents..." class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 flex-1 min-w-[180px]">
     
     <select id="type-filter" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
       <option value="">All File Types</option>
@@ -46,42 +46,43 @@
     <button id="clear-filters" class="text-xs text-slate-400 hover:text-white px-2 py-1">Reset View</button>
   </section>
 
-  <!-- Split-Screen Workspace -->
-  <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-    
-    <!-- Left Document / Folder Panel -->
-    <div class="w-full lg:w-5/12 border-r border-slate-700 overflow-y-auto p-4 space-y-3 max-h-[50vh] lg:max-h-none flex flex-col" id="left-panel">
-      <!-- Breadcrumb Navigation Bar -->
-      <div id="breadcrumb-bar" class="hidden flex items-center justify-between pb-2 mb-2 border-b border-slate-700/60 text-xs">
-        <button id="back-to-folders" class="flex items-center gap-1 text-blue-400 hover:text-blue-300 font-medium">
-          ← Back to Vault Folders
-        </button>
-        <span id="current-folder-label" class="text-slate-400 font-mono"></span>
-      </div>
-
-      <div id="panel-list" class="space-y-2 flex-1">
-        <div class="text-center py-12 text-slate-500 text-sm">Authenticating user...</div>
-      </div>
+  <!-- Folder & File Explorer List -->
+  <main class="flex-1 overflow-y-auto p-4 sm:p-6 max-w-5xl w-full mx-auto space-y-3">
+    <!-- Breadcrumb Navigation Bar -->
+    <div id="breadcrumb-bar" class="hidden flex items-center justify-between pb-3 mb-2 border-b border-slate-700/60 text-xs">
+      <button id="back-to-folders" class="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-medium text-sm">
+        ← Back to Vault Folders
+      </button>
+      <span id="current-folder-label" class="text-slate-400 font-mono text-xs"></span>
     </div>
 
-    <!-- Right PDF/File Viewer Panel -->
-    <div class="w-full lg:w-7/12 bg-slate-950 flex flex-col min-h-[50vh] lg:min-h-0">
-      <div id="viewer-header" class="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center hidden">
-        <span id="viewer-title" class="text-xs font-medium text-slate-300 truncate pr-4">Document Title</span>
-        <a id="external-link" href="#" target="_blank" class="text-xs text-blue-400 hover:underline flex items-center gap-1">Open in Drive ↗</a>
-      </div>
-      <div id="viewer-container" class="flex-1 flex items-center justify-center p-6 text-center">
-        <div class="flex flex-col items-center justify-center text-slate-500 gap-3" id="viewer-placeholder">
-          <svg class="w-16 h-16 opacity-40 stroke-current text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-          </svg>
-          <span class="text-xs tracking-wider uppercase font-semibold text-slate-400" id="placeholder-text">SELECT A VAULT FOLDER TO BEGIN BROWSING DOCUMENTS</span>
-        </div>
-        <iframe id="preview-frame" class="w-full h-full rounded border-0 hidden" allow="autoplay"></iframe>
-      </div>
+    <div id="panel-list" class="space-y-2.5">
+      <div class="text-center py-16 text-slate-500 text-sm">Authenticating user...</div>
     </div>
-
   </main>
+
+  <!-- Full-Screen Document Preview Popup Modal -->
+  <div id="preview-modal" class="fixed inset-0 z-50 bg-slate-950 flex flex-col hidden">
+    <!-- Modal Header -->
+    <div class="p-3 bg-slate-900 border-b border-slate-800 flex justify-between items-center px-4 sm:px-6 shadow-md">
+      <div class="flex items-center gap-2 overflow-hidden pr-2">
+        <span id="modal-title" class="text-sm sm:text-base font-semibold text-slate-100 truncate">Document Title</span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <a id="modal-external-link" href="#" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1 bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700">
+          Drive ↗
+        </a>
+        <button id="close-modal-btn" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow">
+          ✕ Close
+        </button>
+      </div>
+    </div>
+    
+    <!-- Modal Preview Frame -->
+    <div class="flex-1 w-full h-full bg-slate-950 relative">
+      <iframe id="modal-preview-frame" class="w-full h-full border-0" allow="autoplay"></iframe>
+    </div>
+  </div>
 
   <script>
     // --- PASTE YOUR WEB APP DEPLOYMENT URL HERE ---
@@ -101,14 +102,15 @@
     const yearFilter = document.getElementById("year-filter");
     const clearFiltersBtn = document.getElementById("clear-filters");
     const statusIndicator = document.getElementById("status-indicator");
-    const previewFrame = document.getElementById("preview-frame");
-    const viewerPlaceholder = document.getElementById("viewer-placeholder");
-    const placeholderText = document.getElementById("placeholder-text");
-    const viewerHeader = document.getElementById("viewer-header");
-    const viewerTitle = document.getElementById("viewer-title");
-    const externalLink = document.getElementById("external-link");
     const userBadge = document.getElementById("user-badge");
     const userEmailDisplay = document.getElementById("user-email-display");
+
+    // Modal elements
+    const previewModal = document.getElementById("preview-modal");
+    const modalTitle = document.getElementById("modal-title");
+    const modalExternalLink = document.getElementById("modal-external-link");
+    const modalPreviewFrame = document.getElementById("modal-preview-frame");
+    const closeModalBtn = document.getElementById("close-modal-btn");
 
     function init() {
       if (!currentUserEmail) {
@@ -127,8 +129,8 @@
         updateUserBadgeDisplay();
         fetchVaultData();
       } else if (!currentUserEmail) {
-        statusIndicator.textContent = "Access Denied: Email Required";
-        panelList.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">Please enter an authorized email address to view folders.</div>';
+        statusIndicator.textContent = "Access Denied";
+        panelList.innerHTML = '<div class="text-center py-16 text-slate-500 text-sm">Please enter an authorized email address to view folders.</div>';
       }
     }
 
@@ -137,8 +139,8 @@
     }
 
     function fetchVaultData() {
-      statusIndicator.textContent = "Checking security permissions...";
-      panelList.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">Loading authorized records...</div>';
+      statusIndicator.textContent = "Checking security...";
+      panelList.innerHTML = '<div class="text-center py-16 text-slate-500 text-sm">Loading authorized records...</div>';
 
       const secureUrl = `${API_URL}?email=${encodeURIComponent(currentUserEmail)}`;
 
@@ -146,13 +148,13 @@
         .then(response => response.json())
         .then(data => {
           rawData = data.filter(row => row.Name && row.FileID);
-          statusIndicator.textContent = `${rawData.length} Documents Authorized`;
+          statusIndicator.textContent = `${rawData.length} Documents`;
           populateDropdowns();
           renderView();
         })
         .catch(err => {
-          statusIndicator.textContent = "Error connecting to secure API.";
-          panelList.innerHTML = '<div class="text-center py-12 text-red-400 text-sm">Failed to verify permissions or load dataset.</div>';
+          statusIndicator.textContent = "API Error";
+          panelList.innerHTML = '<div class="text-center py-16 text-red-400 text-sm">Failed to verify permissions or load dataset.</div>';
           console.error(err);
         });
     }
@@ -196,7 +198,7 @@
       const categories = [...new Set(rawData.map(item => item.Category))].filter(Boolean).sort();
 
       if (categories.length === 0) {
-        panelList.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No authorized vault folders assigned to this account.</div>';
+        panelList.innerHTML = '<div class="text-center py-16 text-slate-500 text-sm">No authorized vault folders assigned to this account.</div>';
         return;
       }
 
@@ -206,8 +208,8 @@
         card.className = "p-4 bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 rounded-xl cursor-pointer transition flex justify-between items-center group shadow-sm";
         
         card.innerHTML = `
-          <div class="flex items-center gap-3">
-            <div class="p-2 bg-slate-900 border border-slate-700 rounded-lg text-amber-400 group-hover:border-amber-400/50 transition">
+          <div class="flex items-center gap-3.5">
+            <div class="p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-amber-400 group-hover:border-amber-400/50 transition">
               <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
               </svg>
@@ -222,7 +224,6 @@
 
         card.addEventListener("click", () => {
           activeFolder = cat;
-          placeholderText.textContent = `SELECT A DOCUMENT IN ${cat.toUpperCase()} TO BEGIN PREVIEW`;
           renderView();
         });
 
@@ -233,13 +234,13 @@
     function renderDocuments(items) {
       panelList.innerHTML = "";
       if (items.length === 0) {
-        panelList.innerHTML = '<div class="text-center py-12 text-slate-500 text-sm">No matching documents found</div>';
+        panelList.innerHTML = '<div class="text-center py-16 text-slate-500 text-sm">No matching documents found</div>';
         return;
       }
 
       items.forEach(item => {
         const card = document.createElement("div");
-        card.className = "p-3 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 rounded-lg cursor-pointer transition flex justify-between items-start gap-3";
+        card.className = "p-3.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 rounded-xl cursor-pointer transition flex justify-between items-center gap-3 shadow-sm";
         
         let typeBadgeColor = "bg-gray-700 text-gray-300";
         if (item.Type === "PDF") typeBadgeColor = "bg-red-900/60 text-red-300 border border-red-700/50";
@@ -256,10 +257,10 @@
               <span>${item.LastModified || ""}</span>
             </div>
           </div>
-          <span class="text-[10px] px-2 py-0.5 rounded font-mono ${typeBadgeColor}">${item.Type}</span>
+          <span class="text-[10px] px-2.5 py-1 rounded font-mono ${typeBadgeColor}">${item.Type}</span>
         `;
 
-        card.addEventListener("click", () => loadPreview(item));
+        card.addEventListener("click", () => openFullScreenPreview(item));
         panelList.appendChild(card);
       });
     }
@@ -278,14 +279,19 @@
       });
     }
 
-    function loadPreview(item) {
-      const previewUrl = `https://drive.google.com/file/d/${item.FileID}/preview`;
-      previewFrame.src = previewUrl;
-      previewFrame.classList.remove("hidden");
-      viewerPlaceholder.classList.add("hidden");
-      viewerHeader.classList.remove("hidden");
-      viewerTitle.textContent = item.Name;
-      externalLink.href = item.URL;
+    function openFullScreenPreview(item) {
+      modalTitle.textContent = item.Name;
+      modalExternalLink.href = item.URL;
+      modalPreviewFrame.src = `https://drive.google.com/file/d/${item.FileID}/preview`;
+      
+      previewModal.classList.remove("hidden");
+      document.body.classList.add("overflow-hidden");
+    }
+
+    function closeFullScreenPreview() {
+      previewModal.classList.add("hidden");
+      modalPreviewFrame.src = ""; // Stop PDF rendering process in background
+      document.body.classList.remove("overflow-hidden");
     }
 
     function resetToRootFolders() {
@@ -293,14 +299,10 @@
       searchInput.value = "";
       typeFilter.value = "";
       yearFilter.value = "";
-      previewFrame.src = "";
-      previewFrame.classList.add("hidden");
-      viewerHeader.classList.add("hidden");
-      viewerPlaceholder.classList.remove("hidden");
-      placeholderText.textContent = "SELECT A VAULT FOLDER TO BEGIN BROWSING DOCUMENTS";
       renderView();
     }
 
+    closeModalBtn.addEventListener("click", closeFullScreenPreview);
     userBadge.addEventListener("click", promptUserEmail);
     backToFoldersBtn.addEventListener("click", resetToRootFolders);
     clearFiltersBtn.addEventListener("click", resetToRootFolders);
